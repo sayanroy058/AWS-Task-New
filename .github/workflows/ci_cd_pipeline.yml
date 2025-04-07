@@ -1,28 +1,39 @@
-import pytest
-from frontend_app import app
+name: CI/CD Pipeline
 
-@pytest.fixture
-def client():
-    with app.test_client() as client:
-        yield client
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'  # Explicitly use Python 3.10 for compatibility
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest  # Ensure pytest is installed
+
+    - name: Start backend server
+      run: |
+        nohup python backend_api.py > backend.log 2>&1 &  # Start backend in the background
+        sleep 10  # Ensure enough time for the backend to start
+
+    - name: Run tests
+      run: |
+        pytest test_app.py || (cat backend.log && exit 1)  # Print logs if tests fail
 
 
-def test_home(client):
-    response = client.get('/')
-    assert response.status_code == 200
-    assert b'products' in response.data
-
-
-def test_login(client):
-    response = client.post('/login', data={'username': 'test', 'password': 'test'})
-    assert response.status_code in [200, 302, 401]  # Include 302 for redirect on successful login
-
-
-def test_cart(client):
-    response = client.get('/cart')
-    assert response.status_code in [200, 302]
-
-
-def test_checkout(client):
-    response = client.get('/checkout')
-    assert response.status_code in [200, 302]
