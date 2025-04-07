@@ -15,7 +15,7 @@ def test_home(client):
 
 def test_login(client):
     response = client.post('/login', data={'username': 'test', 'password': 'test'})
-    assert response.status_code in [200, 401]
+    assert response.status_code in [200, 302, 401]  # Include 302 for redirect on successful login
 
 
 def test_cart(client):
